@@ -623,8 +623,6 @@ button.btn-sm[onclick="doSignOut()"]{
 .inv-gain.neg{color:var(--danger);}
 .inv-gain.neu{color:var(--text3);}
 .inv-cur-val{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;}
-.inv-row-ext{grid-template-columns:1fr 70px 90px 110px 110px 90px auto;}
-.inv-fetching{opacity:.5;font-size:11px;font-family:"JetBrains Mono",monospace;color:var(--text3);}
 .btn-refresh{height:28px;padding:0 10px;font-size:11px;background:var(--blue-light);color:var(--blue);border:1px solid rgba(22,80,160,0.2);border-radius:var(--radius);font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500;}
 .btn-refresh:hover{background:var(--blue);color:#fff;}
 .btn-upd-val{height:28px;padding:0 10px;font-size:11px;background:var(--amber-light);color:var(--amber);border:1px solid rgba(154,92,0,0.2);border-radius:var(--radius);font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500;}
@@ -644,30 +642,77 @@ button.btn-sm[onclick="doSignOut()"]{
   .tag-fd{background:#2a1e08!important;color:#d4a040!important;}
   .tag-other{background:#222220!important;color:#8a8a82!important;}
 }
-@media(max-width:600px){.inv-row-ext{grid-template-columns:1fr auto auto;}}
-.inv-tabs{display:flex;gap:3px;margin-bottom:1.25rem;background:var(--surface2);padding:4px;border-radius:var(--radius-xl);width:fit-content;}
+
+/* ── INVESTMENTS LAYOUT ── */
+.inv-tabs{display:flex;gap:3px;margin-bottom:1.25rem;background:var(--surface2);padding:4px;border-radius:var(--radius-xl);width:fit-content;max-width:100%;}
 .inv-tab{font-size:12px;padding:6px 16px;border-radius:100px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-family:"JetBrains Mono",monospace;transition:all .15s;font-weight:500;}
 .inv-tab:hover{color:var(--text);}
 .inv-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.1),0 0 0 1px var(--border);}
 .inv-section{display:none;}.inv-section.active{display:block;}
+
+/* metrics grid */
 .inv-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.5rem;}
-@media(max-width:600px){.inv-metrics{grid-template-columns:repeat(2,1fr);}}
-.form-grid-inv{display:grid;grid-template-columns:1fr 110px 90px 120px auto;gap:8px;align-items:center;}
-.form-grid-inv input,.form-grid-inv select{height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:"Instrument Sans",sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
-.form-grid-inv input:focus,.form-grid-inv select:focus{border-color:var(--border3);box-shadow:0 0 0 3px rgba(26,107,60,0.08);}
-.form-grid-mat{display:grid;grid-template-columns:1fr 90px 90px 120px 120px auto;gap:8px;align-items:center;}
-.form-grid-mat input,.form-grid-mat select{height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:"Instrument Sans",sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
+
+/* ── ADD INVESTMENT FORM ── */
+/* Row 1: name + type */
+.inv-form-top{display:grid;grid-template-columns:1fr 160px;gap:8px;margin-bottom:8px;}
+/* Row 2: ticker, buy price, qty, total, hint, btn */
+.inv-form-bottom{display:grid;grid-template-columns:120px 120px 90px 110px 1fr auto;gap:8px;align-items:center;}
+/* shared input style */
+.inv-input{height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:"Instrument Sans",sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
+.inv-input:focus{border-color:var(--border3);box-shadow:0 0 0 3px rgba(26,107,60,0.08);}
+.inv-input-mono{font-family:"JetBrains Mono",monospace;text-transform:uppercase;}
+
+/* ── HOLDING ROW ── */
+.inv-row-ext{grid-template-columns:1fr 70px 95px 105px 105px 90px auto;}
+
+/* ── MATURITY ROW ── */
+.mat-row{grid-template-columns:1fr 70px 80px 105px 105px 105px auto;}
+
+/* ── MATURITIES FORM ── */
+.form-grid-mat{display:grid;grid-template-columns:1fr 100px 90px 120px 120px auto;gap:8px;align-items:center;}
+.form-grid-mat input{height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:"Instrument Sans",sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
 .form-grid-mat input:focus{border-color:var(--border3);box-shadow:0 0 0 3px rgba(26,107,60,0.08);}
-.inv-row{grid-template-columns:1fr 80px 80px 110px 110px auto;}
-.mat-row{grid-template-columns:1fr 80px 80px 110px 110px 110px auto;}
+
+/* misc */
 .badge-inv{background:var(--blue-light);color:var(--blue);}
 .badge-mat{background:var(--accent-light);color:var(--accent);}
 .badge-loss{background:var(--danger-light);color:var(--danger);}
+
+/* ── RESPONSIVE ── */
 @media(max-width:600px){
-  .form-grid-inv,.form-grid-mat{grid-template-columns:1fr 1fr;}
-  .form-grid-inv input:first-child,.form-grid-mat input:first-child{grid-column:1/-1;}
-  .form-grid-inv .btn,.form-grid-mat .btn{grid-column:1/-1;}
-  .inv-row,.mat-row{grid-template-columns:1fr auto auto;}
+  /* metrics: 2 cols */
+  .inv-metrics{grid-template-columns:repeat(2,1fr);}
+
+  /* sub-tabs: full width */
+  .inv-tabs{width:100%;}
+  .inv-tab{flex:1;text-align:center;}
+
+  /* add investment form: stack everything */
+  .inv-form-top{grid-template-columns:1fr;}
+  .inv-form-bottom{grid-template-columns:1fr 1fr;row-gap:8px;}
+  .inv-form-bottom .inv-input-mono{grid-column:1/-1;}  /* ticker full width */
+  .inv-form-bottom .inv-amt-hint{display:none;}        /* hide hint on mobile */
+  .inv-form-bottom .btn{grid-column:1/-1;}             /* add btn full width */
+
+  /* holding row: simplified 2-col */
+  .inv-row-ext{grid-template-columns:1fr auto;}
+  /* hide mid columns on mobile, keep name + G/L + action */
+  .inv-row-ext > .inv-gain{display:none;}
+  .inv-row-ext > div:nth-child(3),
+  .inv-row-ext > div:nth-child(4),
+  .inv-row-ext > div:nth-child(5){display:none;}
+
+  /* maturity row: simplified */
+  .mat-row{grid-template-columns:1fr auto;}
+  .mat-row > span:nth-child(2){display:none;}
+  .mat-row > div:nth-child(3),
+  .mat-row > div:nth-child(4){display:none;}
+
+  /* maturities form: stack */
+  .form-grid-mat{grid-template-columns:1fr 1fr;}
+  .form-grid-mat input:first-child{grid-column:1/-1;}
+  .form-grid-mat .btn{grid-column:1/-1;}
 }
 </style>
 </head>
@@ -935,9 +980,9 @@ button.btn-sm[onclick="doSignOut()"]{
     <div class="inv-section active" id="invtab-holdings">
       <div class="card">
         <div class="card-title">Add investment</div>
-        <div style="display:grid;grid-template-columns:1fr 150px;gap:8px;margin-bottom:8px;">
-          <input type="text" id="inv-name" placeholder="Asset name (e.g. Apple Inc, Bitcoin, Gold)" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
-          <select id="inv-type" onchange="onInvTypeChange()" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;">
+        <div class="inv-form-top">
+          <input type="text" id="inv-name" class="inv-input" placeholder="Asset name (e.g. Apple Inc, Bitcoin, Gold)"/>
+          <select id="inv-type" class="inv-input" onchange="onInvTypeChange()">
             <option value="Stock">📊 Stock / ETF</option>
             <option value="Crypto">🪙 Crypto</option>
             <option value="Gold">✨ Gold / Commodity</option>
@@ -946,17 +991,17 @@ button.btn-sm[onclick="doSignOut()"]{
             <option value="Other">📦 Other (manual)</option>
           </select>
         </div>
-        <div id="inv-form-row" style="display:grid;grid-template-columns:120px 110px 90px 110px 120px auto;gap:8px;align-items:center;">
-          <input type="text" id="inv-ticker" placeholder="Ticker (e.g. AAPL)" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:0 12px;outline:none;width:100%;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/>
-          <input type="number" id="inv-buyprice" placeholder="Buy price/unit" min="0" step="0.000001" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
-          <input type="number" id="inv-qty" placeholder="Quantity" min="0" step="0.0001" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
-          <input type="number" id="inv-amt" placeholder="Total paid" min="0" step="0.01" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
-          <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.4;" id="inv-amt-hint">Total = buy price × qty</div>
+        <div class="inv-form-bottom">
+          <input type="text" id="inv-ticker" class="inv-input inv-input-mono" placeholder="Ticker (e.g. AAPL)" oninput="this.value=this.value.toUpperCase()"/>
+          <input type="number" id="inv-buyprice" class="inv-input" placeholder="Buy price/unit" min="0" step="0.000001"/>
+          <input type="number" id="inv-qty" class="inv-input" placeholder="Quantity" min="0" step="0.0001"/>
+          <input type="number" id="inv-amt" class="inv-input" placeholder="Total paid" min="0" step="0.01"/>
+          <div class="inv-amt-hint" id="inv-amt-hint" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.4;">Total = buy price × qty</div>
           <button class="btn" onclick="addInvestment()">+ Add</button>
         </div>
         <!-- Rate row: only shown for TBill / FD -->
         <div id="inv-rate-row" style="display:none;margin-top:8px;">
-          <input type="number" id="inv-rate" placeholder="Interest rate (%)" min="0" step="0.01" style="height:38px;width:160px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;"/>
+          <input type="number" id="inv-rate" class="inv-input" placeholder="Interest rate (%)" min="0" step="0.01" style="width:160px;"/>
           <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-left:10px;">Annual interest rate (for reference)</span>
         </div>
         <div id="inv-form-hint" style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
@@ -1280,7 +1325,7 @@ window.onInvTypeChange=function(){
   tickerInput.placeholder=isLive?"Ticker (e.g. AAPL)":"— no ticker needed —";
   buyPriceInput.style.opacity=isLive?"1":"0.5";
   buyPriceInput.placeholder=isLive?"Buy price/unit":"Buy price/unit (opt)";
-  amtHint.textContent=isLive?"Total = buy price × qty":"Total amount paid";
+  if(amtHint)amtHint.textContent=isLive?"Total = buy price × qty":"Total amount paid";
   hint.innerHTML=HINTS[type]||HINTS.Other;
 };
 // Auto-calculate total paid from buy price × qty
