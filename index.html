@@ -937,7 +937,7 @@ button.btn-sm[onclick="doSignOut()"]{
         <div class="card-title">Add investment</div>
         <div style="display:grid;grid-template-columns:1fr 150px;gap:8px;margin-bottom:8px;">
           <input type="text" id="inv-name" placeholder="Asset name (e.g. Apple Inc, Bitcoin, Gold)" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
-          <select id="inv-type" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;">
+          <select id="inv-type" onchange="onInvTypeChange()" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;">
             <option value="Stock">📊 Stock / ETF</option>
             <option value="Crypto">🪙 Crypto</option>
             <option value="Gold">✨ Gold / Commodity</option>
@@ -946,15 +946,21 @@ button.btn-sm[onclick="doSignOut()"]{
             <option value="Other">📦 Other (manual)</option>
           </select>
         </div>
-        <div style="display:grid;grid-template-columns:120px 110px 90px 120px auto;gap:8px;align-items:center;">
+        <div id="inv-form-row" style="display:grid;grid-template-columns:120px 110px 90px 110px 120px auto;gap:8px;align-items:center;">
           <input type="text" id="inv-ticker" placeholder="Ticker (e.g. AAPL)" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:0 12px;outline:none;width:100%;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/>
-          <input type="number" id="inv-rate" placeholder="Rate (%)" min="0" step="0.01" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
+          <input type="number" id="inv-buyprice" placeholder="Buy price/unit" min="0" step="0.000001" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
           <input type="number" id="inv-qty" placeholder="Quantity" min="0" step="0.0001" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
-          <input type="number" id="inv-amt" placeholder="Amount paid" min="0" step="0.01" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
+          <input type="number" id="inv-amt" placeholder="Total paid" min="0" step="0.01" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
+          <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.4;" id="inv-amt-hint">Total = buy price × qty</div>
           <button class="btn" onclick="addInvestment()">+ Add</button>
         </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
-          💡 For Stocks enter ticker (e.g. AAPL, TSLA) · For Crypto enter symbol (e.g. BTC, ETH) · For Gold use <strong>XAU</strong> · Others use manual value updates
+        <!-- Rate row: only shown for TBill / FD -->
+        <div id="inv-rate-row" style="display:none;margin-top:8px;">
+          <input type="number" id="inv-rate" placeholder="Interest rate (%)" min="0" step="0.01" style="height:38px;width:160px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;"/>
+          <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-left:10px;">Annual interest rate (for reference)</span>
+        </div>
+        <div id="inv-form-hint" style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
+          💡 For Stocks enter ticker (e.g. AAPL, TSLA) · For Crypto enter symbol (e.g. BTC, ETH) · For Gold use <strong>XAU</strong> as ticker + quantity in oz
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -1247,17 +1253,69 @@ document.getElementById("cr-name").addEventListener("keydown",e=>{if(e.key==="En
 document.getElementById("inv-name").addEventListener("keydown",e=>{if(e.key==="Enter")window.addInvestment();});
 document.getElementById("mat-name").addEventListener("keydown",e=>{if(e.key==="Enter")window.addMaturity();});
 
+// ── INVESTMENT FORM: dynamic fields based on type ──
+const RATE_TYPES=["TBill","FD"];
+const TICKER_TYPES=["Stock","Crypto","Gold"];
+const HINTS={
+  Stock:"💡 Enter ticker (e.g. AAPL, TSLA) · buy price per share in your currency · quantity → P&L = (current price − buy price) × qty",
+  Crypto:"💡 Enter symbol (e.g. BTC, ETH) · buy price per coin in GH₵ · quantity → P&L = (current price − buy price) × qty",
+  Gold:"💡 Ticker: <strong>XAU</strong> · buy price per troy oz in GH₵ · quantity in oz → P&L = (spot − buy price) × oz",
+  TBill:"💡 Enter face value as total paid. Rate = agreed interest rate. Use ✎ Update to record current/maturity value.",
+  FD:"💡 Enter principal as total paid. Rate = annual interest rate. Use ✎ Update to record accrued value.",
+  Other:"💡 Enter any amount. Use ✎ Update button to manually set current value at any time.",
+};
+window.onInvTypeChange=function(){
+  const type=document.getElementById("inv-type").value;
+  const rateRow=document.getElementById("inv-rate-row");
+  const tickerInput=document.getElementById("inv-ticker");
+  const buyPriceInput=document.getElementById("inv-buyprice");
+  const hint=document.getElementById("inv-form-hint");
+  const amtHint=document.getElementById("inv-amt-hint");
+  // Rate row: only TBill / FD
+  rateRow.style.display=RATE_TYPES.includes(type)?"block":"none";
+  if(!RATE_TYPES.includes(type))document.getElementById("inv-rate").value="";
+  // Ticker + buy price: live types only
+  const isLive=TICKER_TYPES.includes(type);
+  tickerInput.style.opacity=isLive?"1":"0.35";
+  tickerInput.placeholder=isLive?"Ticker (e.g. AAPL)":"— no ticker needed —";
+  buyPriceInput.style.opacity=isLive?"1":"0.5";
+  buyPriceInput.placeholder=isLive?"Buy price/unit":"Buy price/unit (opt)";
+  amtHint.textContent=isLive?"Total = buy price × qty":"Total amount paid";
+  hint.innerHTML=HINTS[type]||HINTS.Other;
+};
+// Auto-calculate total paid from buy price × qty
+function setupInvAutoCalc(){
+  const bp=document.getElementById("inv-buyprice");
+  const qty=document.getElementById("inv-qty");
+  const amt=document.getElementById("inv-amt");
+  function calc(){
+    const b=parseFloat(bp.value),q=parseFloat(qty.value);
+    if(!isNaN(b)&&!isNaN(q)&&b>0&&q>0)amt.value=(b*q).toFixed(2);
+  }
+  bp.addEventListener("input",calc);
+  qty.addEventListener("input",calc);
+}
+window.addEventListener("DOMContentLoaded",()=>{
+  if(document.getElementById("inv-type")){window.onInvTypeChange();setupInvAutoCalc();}
+});
+
 window.addInvestment=function(){
   const name=document.getElementById("inv-name").value.trim();
   const type=document.getElementById("inv-type").value;
   const ticker=(document.getElementById("inv-ticker").value||"").trim().toUpperCase();
-  const rate=parseFloat(document.getElementById("inv-rate").value)||0;
+  const rate=RATE_TYPES.includes(type)?(parseFloat(document.getElementById("inv-rate").value)||0):null;
+  const buyPrice=parseFloat(document.getElementById("inv-buyprice").value)||null;
   const qty=parseFloat(document.getElementById("inv-qty").value)||0;
   const amt=parseFloat(document.getElementById("inv-amt").value);
   if(!name||isNaN(amt)||amt<=0)return;
-  addToDb("investments",{date:todayStr(),name,type,ticker,rate,qty,amount:amt,currentValue:amt,lastUpdated:todayStr()});
+  // Derive buy price from total if not entered explicitly
+  const derivedBuyPrice=buyPrice!==null?buyPrice:(qty>0?parseFloat((amt/qty).toFixed(6)):null);
+  const data={date:todayStr(),name,type,ticker:TICKER_TYPES.includes(type)?ticker:"",qty,amount:amt,buyPrice:derivedBuyPrice,currentValue:amt,currentPricePerUnit:derivedBuyPrice,lastUpdated:todayStr()};
+  if(rate!==null)data.rate=rate;
+  addToDb("investments",data);
   document.getElementById("inv-name").value="";
   document.getElementById("inv-ticker").value="";
+  document.getElementById("inv-buyprice").value="";
   document.getElementById("inv-rate").value="";
   document.getElementById("inv-qty").value="";
   document.getElementById("inv-amt").value="";
@@ -1330,25 +1388,24 @@ async function fetchCurrentPrice(inv){
     const r=await fetchStockPrice(ticker);
     if(!r)return null;
     const ghsRate=await getUSDtoGHS();
-    const priceGHS=r.currency==="GHS"?r.price:r.price*(r.currency==="USD"?ghsRate:1);
-    return qty>0?priceGHS*qty:null; // need qty for total value
+    const pricePerUnit=r.currency==="GHS"?r.price:r.price*(r.currency==="USD"?ghsRate:1);
+    return qty>0?{totalValue:pricePerUnit*qty,pricePerUnit}:null;
   }
   if(type==="Crypto"&&ticker){
     const r=await fetchCryptoPrice(ticker);
     if(!r)return null;
     const ghsRate=await getUSDtoGHS();
-    const priceGHS=r.price*ghsRate;
-    return qty>0?priceGHS*qty:null;
+    const pricePerUnit=r.price*ghsRate;
+    return qty>0?{totalValue:pricePerUnit*qty,pricePerUnit}:null;
   }
   if(type==="Gold"){
-    // XAU: qty = ounces
     const r=await fetchGoldPrice();
     if(!r)return null;
     const ghsRate=await getUSDtoGHS();
-    const priceGHS=r.price*ghsRate;
-    return qty>0?priceGHS*qty:null;
+    const pricePerUnit=r.price*ghsRate;
+    return qty>0?{totalValue:pricePerUnit*qty,pricePerUnit}:null;
   }
-  return null; // manual types — no auto fetch
+  return null;
 }
 
 const LIVE_TYPES=["Stock","Crypto","Gold"];
@@ -1363,10 +1420,14 @@ window.refreshAllPrices=async function(){
   if(!liveInvs.length){status.textContent="No live-trackable holdings (need ticker + quantity).";btn.textContent="⟳ Refresh all prices";btn.disabled=false;return;}
   let updated=0,failed=0;
   for(const inv of liveInvs){
-    const val=await fetchCurrentPrice(inv);
-    if(val!==null){
+    const result=await fetchCurrentPrice(inv);
+    if(result!==null){
       try{
-        await updateDoc(doc(db,"users",currentUser.uid,"investments",inv.id),{currentValue:parseFloat(val.toFixed(2)),lastUpdated:todayStr()});
+        await updateDoc(doc(db,"users",currentUser.uid,"investments",inv.id),{
+          currentValue:parseFloat(result.totalValue.toFixed(2)),
+          currentPricePerUnit:parseFloat(result.pricePerUnit.toFixed(6)),
+          lastUpdated:todayStr()
+        });
         updated++;
       }catch(e){failed++;console.error(e);}
     } else {failed++;}
@@ -1379,11 +1440,15 @@ window.refreshOnePrice=async function(id){
   const inv=investments.find(e=>e.id===id);if(!inv)return;
   const status=document.getElementById("inv-price-status");
   status.textContent=`Fetching price for ${inv.name}…`;
-  const val=await fetchCurrentPrice(inv);
-  if(val!==null){
+  const result=await fetchCurrentPrice(inv);
+  if(result!==null){
     try{
-      await updateDoc(doc(db,"users",currentUser.uid,"investments",id),{currentValue:parseFloat(val.toFixed(2)),lastUpdated:todayStr()});
-      status.textContent=`${inv.name} updated. As of ${todayStr()}.`;
+      await updateDoc(doc(db,"users",currentUser.uid,"investments",id),{
+        currentValue:parseFloat(result.totalValue.toFixed(2)),
+        currentPricePerUnit:parseFloat(result.pricePerUnit.toFixed(6)),
+        lastUpdated:todayStr()
+      });
+      status.textContent=`${inv.name} updated to GH₵ ${result.pricePerUnit.toFixed(4)}/unit. As of ${todayStr()}.`;
     }catch(e){status.textContent="Save failed.";console.error(e);}
   } else {
     status.textContent=`Could not fetch price for ${inv.name}. Check ticker and quantity.`;
@@ -1990,7 +2055,6 @@ function renderInvestments(){
   const tUnrealised=tCurrentVal-tCost;
   const tProfit=maturities.reduce((s,e)=>s+(e.profit||0),0);
   const tProceeds=maturities.reduce((s,e)=>s+(e.proceeds||0),0);
-  const netROI=tCost>0?((tProfit/tCost)*100).toFixed(1):0;
   const unrealisedROI=tCost>0?((tUnrealised/tCost)*100).toFixed(1):0;
 
   document.getElementById("inv-metrics").innerHTML=`
@@ -2007,14 +2071,28 @@ function renderInvestments(){
   const sortedInv=[...investments].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   if(!sortedInv.length){invEl.innerHTML='<div class="empty">No investments recorded yet</div>';}
   else invEl.innerHTML=sortedInv.map(e=>{
+    const qty=e.qty||0;
+    const buyPrice=e.buyPrice||(qty>0?e.amount/qty:null);
+    const curPricePerUnit=e.currentPricePerUnit||(qty>0?(e.currentValue??e.amount)/qty:null);
     const curVal=e.currentValue??e.amount;
-    const gain=curVal-e.amount;
-    const gainPct=e.amount>0?((gain/e.amount)*100).toFixed(1):0;
+
+    // P&L: if we have per-unit prices and qty, use precise calc; else fall back to totals
+    let gain,gainPct;
+    if(buyPrice&&curPricePerUnit&&qty>0){
+      gain=(curPricePerUnit-buyPrice)*qty;
+      gainPct=((curPricePerUnit-buyPrice)/buyPrice*100).toFixed(2);
+    } else {
+      gain=curVal-e.amount;
+      gainPct=e.amount>0?((gain/e.amount)*100).toFixed(2):"0.00";
+    }
+
     const barPct=e.amount>0?Math.min(200,Math.max(0,(curVal/e.amount)*100)):0;
     const barColor=gain>=0?"var(--accent)":"var(--danger)";
     const type=e.type||"Other";
     const live=isLiveType(type);
     const lastUpd=e.lastUpdated?`Updated ${e.lastUpdated}`:"Not yet fetched";
+    const buyPriceStr=buyPrice!=null?`Buy: GH₵${parseFloat(buyPrice.toFixed(4))} · `:"";
+    const curPriceStr=curPricePerUnit!=null?`Now: GH₵${parseFloat(curPricePerUnit.toFixed(4))}`:"";
     const actionBtn=live
       ?`<button class="btn-refresh" onclick="refreshOnePrice('${e.id}')">⟳</button>`
       :`<button class="btn-upd-val" onclick="openUpdVal('${e.id}')">✎ Update</button>`;
@@ -2026,7 +2104,11 @@ function renderInvestments(){
           <span class="inv-type-tag ${TYPE_TAG[type]||"tag-other"}">${TYPE_LABEL[type]||type}</span>
           ${e.ticker?`<span class="inv-type-tag tag-stock" style="font-size:9px">${e.ticker}</span>`:""}
         </div>
-        <div class="ri-sub">${e.date} &middot; Qty: ${e.qty??"\u2014"} &middot; Rate: ${e.rate??0}% &middot; ${lastUpd}</div>
+        <div class="ri-sub">
+          ${e.date} &middot; Qty: ${qty||"\u2014"} &middot; ${buyPriceStr}${curPriceStr}
+          ${(e.type==="TBill"||e.type==="FD")&&e.rate!=null?" &middot; Rate: "+e.rate+"%":""}
+          &middot; ${lastUpd}
+        </div>
         <div class="inv-growth-bar-wrap"><div class="inv-growth-bar" style="width:${Math.min(100,barPct)}%;background:${barColor}"></div></div>
       </div>
       <span class="inv-gain ${gain>0?"pos":gain<0?"neg":"neu"}">${gain>=0?"+":""}${gainPct}%</span>
@@ -2048,11 +2130,11 @@ function renderInvestments(){
     <div class="row-item mat-row">
       <div>
         <div class="ri-name">💰 ${e.name}</div>
-        <div class="ri-sub">${e.date} &middot; Qty sold: ${e.qty??"\u2014"} &middot; Exit rate: ${e.rate??0}%</div>
+        <div class="ri-sub">${e.date} &middot; Qty sold: ${e.qty??"\u2014"}${e.rate?" &middot; Exit rate: "+e.rate+"%":""}${e.sellPrice?" &middot; Sell price: GH₵"+parseFloat(e.sellPrice.toFixed(4))+"/unit":""}</div>
       </div>
       <span class="badge ${profit>=0?"badge-mat":"badge-loss"}">${profit>=0?"PROFIT":"LOSS"}</span>
       <div class="ri-amt" style="color:var(--text2);font-size:11px">Qty<br><strong style="font-size:13px;color:var(--text)">${e.qty??"\u2014"}</strong></div>
-      <div class="ri-amt" style="color:var(--text2);font-size:11px">Exit %<br><strong style="font-size:13px;color:var(--blue)">${e.rate??0}%</strong></div>
+      <div class="ri-amt" style="color:var(--text2);font-size:11px">${e.sellPrice?"Sell/unit":"Exit %"}<br><strong style="font-size:13px;color:var(--blue)">${e.sellPrice?"GH₵"+parseFloat(e.sellPrice.toFixed(2)):(e.rate??0)+"%"}</strong></div>
       <div class="ri-amt green">${fmt(e.proceeds)}</div>
       <div class="ri-amt ${profit>=0?"green":"red"}">${fmtS(profit)}</div>
       <button class="del-btn" onclick="delDoc('maturities','${e.id}')">&#215;</button>
