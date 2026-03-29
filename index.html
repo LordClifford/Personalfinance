@@ -615,7 +615,36 @@ button.btn-sm[onclick="doSignOut()"]{
   .card{border:1px solid #ccc!important;break-inside:avoid;box-shadow:none!important;}
 }
 
-/* ── INVESTMENTS ── */
+/* ── INVESTMENT GROWTH TRACKING ── */
+.inv-growth-bar-wrap{background:var(--surface2);border-radius:100px;height:5px;overflow:hidden;margin:6px 0 4px;}
+.inv-growth-bar{height:100%;border-radius:100px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.inv-gain{font-size:11px;font-family:"JetBrains Mono",monospace;font-weight:600;}
+.inv-gain.pos{color:var(--accent);}
+.inv-gain.neg{color:var(--danger);}
+.inv-gain.neu{color:var(--text3);}
+.inv-cur-val{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;}
+.inv-row-ext{grid-template-columns:1fr 70px 90px 110px 110px 90px auto;}
+.inv-fetching{opacity:.5;font-size:11px;font-family:"JetBrains Mono",monospace;color:var(--text3);}
+.btn-refresh{height:28px;padding:0 10px;font-size:11px;background:var(--blue-light);color:var(--blue);border:1px solid rgba(22,80,160,0.2);border-radius:var(--radius);font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500;}
+.btn-refresh:hover{background:var(--blue);color:#fff;}
+.btn-upd-val{height:28px;padding:0 10px;font-size:11px;background:var(--amber-light);color:var(--amber);border:1px solid rgba(154,92,0,0.2);border-radius:var(--radius);font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500;}
+.btn-upd-val:hover{background:var(--amber);color:#fff;}
+.inv-type-tag{font-size:9px;font-family:"JetBrains Mono",monospace;padding:2px 6px;border-radius:100px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-left:5px;}
+.tag-stock{background:var(--blue-light);color:var(--blue);}
+.tag-crypto{background:#f3e8ff;color:#7c3aed;}
+.tag-gold{background:#fef9c3;color:#854d0e;}
+.tag-tbill{background:var(--accent-light);color:var(--accent);}
+.tag-fd{background:var(--amber-light);color:var(--amber);}
+.tag-other{background:var(--surface2);color:var(--text2);}
+@media(prefers-color-scheme:dark){
+  .tag-stock{background:#101828!important;color:#6090e0!important;}
+  .tag-crypto{background:#1e1028!important;color:#c084fc!important;}
+  .tag-gold{background:#2a1e08!important;color:#d4a040!important;}
+  .tag-tbill{background:#0e2a1a!important;color:#4caf7a!important;}
+  .tag-fd{background:#2a1e08!important;color:#d4a040!important;}
+  .tag-other{background:#222220!important;color:#8a8a82!important;}
+}
+@media(max-width:600px){.inv-row-ext{grid-template-columns:1fr auto auto;}}
 .inv-tabs{display:flex;gap:3px;margin-bottom:1.25rem;background:var(--surface2);padding:4px;border-radius:var(--radius-xl);width:fit-content;}
 .inv-tab{font-size:12px;padding:6px 16px;border-radius:100px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-family:"JetBrains Mono",monospace;transition:all .15s;font-weight:500;}
 .inv-tab:hover{color:var(--text);}
@@ -906,15 +935,33 @@ button.btn-sm[onclick="doSignOut()"]{
     <div class="inv-section active" id="invtab-holdings">
       <div class="card">
         <div class="card-title">Add investment</div>
-        <div class="form-grid-inv">
-          <input type="text" id="inv-name" placeholder="Asset name (e.g. Gold, T-Bill, Stocks)"/>
-          <input type="number" id="inv-rate" placeholder="Rate (%)" min="0" step="0.01"/>
-          <input type="number" id="inv-qty" placeholder="Quantity" min="0" step="0.0001"/>
-          <input type="number" id="inv-amt" placeholder="Initial amount" min="0" step="0.01"/>
+        <div style="display:grid;grid-template-columns:1fr 150px;gap:8px;margin-bottom:8px;">
+          <input type="text" id="inv-name" placeholder="Asset name (e.g. Apple Inc, Bitcoin, Gold)" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
+          <select id="inv-type" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;">
+            <option value="Stock">📊 Stock / ETF</option>
+            <option value="Crypto">🪙 Crypto</option>
+            <option value="Gold">✨ Gold / Commodity</option>
+            <option value="TBill">🏦 T-Bill / Bond</option>
+            <option value="FD">💵 Fixed Deposit</option>
+            <option value="Other">📦 Other (manual)</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:120px 110px 90px 120px auto;gap:8px;align-items:center;">
+          <input type="text" id="inv-ticker" placeholder="Ticker (e.g. AAPL)" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:0 12px;outline:none;width:100%;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/>
+          <input type="number" id="inv-rate" placeholder="Rate (%)" min="0" step="0.01" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
+          <input type="number" id="inv-qty" placeholder="Quantity" min="0" step="0.0001" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
+          <input type="number" id="inv-amt" placeholder="Amount paid" min="0" step="0.01" style="height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;"/>
           <button class="btn" onclick="addInvestment()">+ Add</button>
         </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
+          💡 For Stocks enter ticker (e.g. AAPL, TSLA) · For Crypto enter symbol (e.g. BTC, ETH) · For Gold use <strong>XAU</strong> · Others use manual value updates
+        </div>
       </div>
-      <div class="section-label">Active holdings</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="section-label" style="margin-bottom:0">Active holdings</div>
+        <button class="btn-refresh" onclick="refreshAllPrices()" id="refresh-all-btn">⟳ Refresh all prices</button>
+      </div>
+      <div id="inv-price-status" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);margin-bottom:8px;min-height:16px;"></div>
       <div class="list" id="inv-list"></div>
     </div>
 
@@ -933,6 +980,30 @@ button.btn-sm[onclick="doSignOut()"]{
       </div>
       <div class="section-label">Maturities &amp; sales</div>
       <div class="list" id="mat-list"></div>
+    </div>
+  </div>
+
+  <!-- UPDATE VALUE MODAL -->
+  <div class="modal-backdrop" id="updValModal">
+    <div class="modal">
+      <div class="modal-title" id="uv-title">Update Current Value</div>
+      <div class="modal-sub" id="uv-sub"></div>
+      <div class="modal-balance">
+        <div class="modal-balance-label">Cost basis</div>
+        <div class="modal-balance-val" id="uv-cost">GH₵ 0.00</div>
+      </div>
+      <div class="modal-field">
+        <label>Current market value (GH₵)</label>
+        <input type="number" id="uv-val" placeholder="0.00" min="0" step="0.01"/>
+      </div>
+      <div class="modal-field">
+        <label>Note (optional)</label>
+        <input type="text" id="uv-note" placeholder="e.g. Maturity value, bank statement…"/>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-sm" onclick="closeUpdVal()">Cancel</button>
+        <button class="btn" onclick="submitUpdVal()">Save Value</button>
+      </div>
     </div>
   </div>
 
@@ -956,6 +1027,7 @@ button.btn-sm[onclick="doSignOut()"]{
       <div class="pnl-row"><span>Outstanding (owed to you)</span><span class="mono" id="nw-dr">GH&#8373; 0</span></div>
       <div class="pnl-row"><span>Outstanding (you owe)</span><span class="mono" id="nw-cr">GH&#8373; 0</span></div>
       <div class="pnl-row"><span>Investments (cost basis)</span><span class="mono" id="nw-inv">GH&#8373; 0.00</span></div>
+      <div class="pnl-row"><span>Unrealised gain / loss</span><span class="mono" id="nw-inv-unreal">GH&#8373; 0.00</span></div>
       <div class="pnl-row"><span>Investment profit realised</span><span class="mono green" id="nw-inv-profit">GH&#8373; 0.00</span></div>
       <div class="pnl-row"><span>Net Worth</span><span class="mono" id="nw-total">GH&#8373; 0</span></div>
     </div>
@@ -1177,16 +1249,176 @@ document.getElementById("mat-name").addEventListener("keydown",e=>{if(e.key==="E
 
 window.addInvestment=function(){
   const name=document.getElementById("inv-name").value.trim();
+  const type=document.getElementById("inv-type").value;
+  const ticker=(document.getElementById("inv-ticker").value||"").trim().toUpperCase();
   const rate=parseFloat(document.getElementById("inv-rate").value)||0;
   const qty=parseFloat(document.getElementById("inv-qty").value)||0;
   const amt=parseFloat(document.getElementById("inv-amt").value);
   if(!name||isNaN(amt)||amt<=0)return;
-  addToDb("investments",{date:todayStr(),name,rate,qty,amount:amt});
+  addToDb("investments",{date:todayStr(),name,type,ticker,rate,qty,amount:amt,currentValue:amt,lastUpdated:todayStr()});
   document.getElementById("inv-name").value="";
+  document.getElementById("inv-ticker").value="";
   document.getElementById("inv-rate").value="";
   document.getElementById("inv-qty").value="";
   document.getElementById("inv-amt").value="";
 };
+
+// ── LIVE PRICE FETCHING ──
+// In-memory price cache: {symbol: {price, currency, updatedAt}}
+const priceCache={};
+
+async function fetchStockPrice(ticker){
+  if(!ticker)return null;
+  try{
+    // Yahoo Finance v8 via allorigins proxy to avoid CORS
+    const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
+    const outer=await res.json();
+    const data=JSON.parse(outer.contents);
+    const meta=data?.chart?.result?.[0]?.meta;
+    if(!meta)return null;
+    const price=meta.regularMarketPrice||meta.previousClose;
+    const currency=meta.currency||"USD";
+    return{price,currency};
+  }catch(e){console.warn("Stock fetch failed",ticker,e);return null;}
+}
+
+async function fetchCryptoPrice(symbol){
+  if(!symbol)return null;
+  // map common symbols to coingecko ids
+  const idMap={BTC:"bitcoin",ETH:"ethereum",BNB:"binancecoin",SOL:"solana",XRP:"ripple",ADA:"cardano",DOGE:"dogecoin",DOT:"polkadot",MATIC:"matic-network",AVAX:"avalanche-2",LINK:"chainlink",LTC:"litecoin",UNI:"uniswap",ATOM:"cosmos",XLM:"stellar",ALGO:"algorand",NEAR:"near",FTM:"fantom",SAND:"the-sandbox",MANA:"decentraland",SHIB:"shiba-inu",TRX:"tron",USDT:"tether",USDC:"usd-coin"};
+  const id=idMap[symbol.toUpperCase()]||symbol.toLowerCase();
+  try{
+    const res=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`,{signal:AbortSignal.timeout(8000)});
+    const data=await res.json();
+    const price=data[id]?.usd;
+    if(!price)return null;
+    return{price,currency:"USD"};
+  }catch(e){console.warn("Crypto fetch failed",symbol,e);return null;}
+}
+
+async function fetchGoldPrice(){
+  try{
+    // Use frankfurter for XAU/USD — gold spot
+    const res=await fetch("https://api.frankfurter.app/latest?from=XAU&to=USD",{signal:AbortSignal.timeout(8000)});
+    const data=await res.json();
+    const price=data?.rates?.USD;
+    if(!price)return null;
+    return{price,currency:"USD"};
+  }catch(e){console.warn("Gold fetch failed",e);return null;}
+}
+
+// Get USD→GHS exchange rate (cached 1h)
+let _ghsRate=null,_ghsFetched=0;
+async function getUSDtoGHS(){
+  if(_ghsRate&&Date.now()-_ghsFetched<3600000)return _ghsRate;
+  try{
+    const res=await fetch("https://api.frankfurter.app/latest?from=USD&to=GHS",{signal:AbortSignal.timeout(8000)});
+    const data=await res.json();
+    _ghsRate=data?.rates?.GHS||15.5; // fallback rate
+    _ghsFetched=Date.now();
+    return _ghsRate;
+  }catch(e){return _ghsRate||15.5;}
+}
+
+async function fetchCurrentPrice(inv){
+  const type=inv.type||"Other";
+  const ticker=(inv.ticker||"").toUpperCase();
+  const qty=inv.qty||0;
+  if(type==="Stock"&&ticker){
+    const r=await fetchStockPrice(ticker);
+    if(!r)return null;
+    const ghsRate=await getUSDtoGHS();
+    const priceGHS=r.currency==="GHS"?r.price:r.price*(r.currency==="USD"?ghsRate:1);
+    return qty>0?priceGHS*qty:null; // need qty for total value
+  }
+  if(type==="Crypto"&&ticker){
+    const r=await fetchCryptoPrice(ticker);
+    if(!r)return null;
+    const ghsRate=await getUSDtoGHS();
+    const priceGHS=r.price*ghsRate;
+    return qty>0?priceGHS*qty:null;
+  }
+  if(type==="Gold"){
+    // XAU: qty = ounces
+    const r=await fetchGoldPrice();
+    if(!r)return null;
+    const ghsRate=await getUSDtoGHS();
+    const priceGHS=r.price*ghsRate;
+    return qty>0?priceGHS*qty:null;
+  }
+  return null; // manual types — no auto fetch
+}
+
+const LIVE_TYPES=["Stock","Crypto","Gold"];
+const isLiveType=t=>LIVE_TYPES.includes(t);
+
+window.refreshAllPrices=async function(){
+  const btn=document.getElementById("refresh-all-btn");
+  const status=document.getElementById("inv-price-status");
+  btn.textContent="⟳ Fetching…";btn.disabled=true;
+  status.textContent="Fetching live prices…";
+  const liveInvs=investments.filter(e=>isLiveType(e.type||"Other")&&e.ticker&&e.qty>0);
+  if(!liveInvs.length){status.textContent="No live-trackable holdings (need ticker + quantity).";btn.textContent="⟳ Refresh all prices";btn.disabled=false;return;}
+  let updated=0,failed=0;
+  for(const inv of liveInvs){
+    const val=await fetchCurrentPrice(inv);
+    if(val!==null){
+      try{
+        await updateDoc(doc(db,"users",currentUser.uid,"investments",inv.id),{currentValue:parseFloat(val.toFixed(2)),lastUpdated:todayStr()});
+        updated++;
+      }catch(e){failed++;console.error(e);}
+    } else {failed++;}
+  }
+  status.textContent=`Updated ${updated} holding${updated!==1?"s":""}${failed?` · ${failed} failed (check ticker/qty)`:""}. As of ${todayStr()}.`;
+  btn.textContent="⟳ Refresh all prices";btn.disabled=false;
+};
+
+window.refreshOnePrice=async function(id){
+  const inv=investments.find(e=>e.id===id);if(!inv)return;
+  const status=document.getElementById("inv-price-status");
+  status.textContent=`Fetching price for ${inv.name}…`;
+  const val=await fetchCurrentPrice(inv);
+  if(val!==null){
+    try{
+      await updateDoc(doc(db,"users",currentUser.uid,"investments",id),{currentValue:parseFloat(val.toFixed(2)),lastUpdated:todayStr()});
+      status.textContent=`${inv.name} updated. As of ${todayStr()}.`;
+    }catch(e){status.textContent="Save failed.";console.error(e);}
+  } else {
+    status.textContent=`Could not fetch price for ${inv.name}. Check ticker and quantity.`;
+  }
+};
+
+// ── UPDATE VALUE MODAL (manual types) ──
+let _uvId=null;
+window.openUpdVal=function(id){
+  _uvId=id;
+  const inv=investments.find(e=>e.id===id);if(!inv)return;
+  document.getElementById("uv-title").textContent="Update Value: "+inv.name;
+  document.getElementById("uv-sub").textContent=(inv.type||"Manual")+" · Cost basis: "+fmt(inv.amount);
+  document.getElementById("uv-cost").textContent=fmt(inv.amount);
+  document.getElementById("uv-val").value=inv.currentValue||inv.amount;
+  document.getElementById("uv-note").value="";
+  document.getElementById("updValModal").classList.add("open");
+  setTimeout(()=>document.getElementById("uv-val").focus(),150);
+};
+window.closeUpdVal=function(){document.getElementById("updValModal").classList.remove("open");_uvId=null;};
+window.submitUpdVal=async function(){
+  const val=parseFloat(document.getElementById("uv-val").value);
+  if(isNaN(val)||val<0){document.getElementById("uv-val").focus();return;}
+  setSyncStatus("syncing","Saving...");
+  try{
+    await updateDoc(doc(db,"users",currentUser.uid,"investments",_uvId),{currentValue:val,lastUpdated:todayStr()});
+    setSyncStatus("synced","Synced \u2022 all devices");
+    closeUpdVal();
+  }catch(e){setSyncStatus("error","Save failed");console.error(e);}
+};
+
+document.addEventListener("click",e=>{
+  const uvm=document.getElementById("updValModal");
+  if(uvm&&uvm.classList.contains("open")&&e.target===uvm)window.closeUpdVal&&window.closeUpdVal();
+});
 
 window.addMaturity=function(){
   const name=document.getElementById("mat-name").value.trim();
@@ -1374,6 +1606,8 @@ function renderDcLists(){
 function renderPnL(){
   const tI=totalInc(),tE=totalExp(),tS=totalSav(),tDr=totalDr(),tCr=totalCr(),net=tI-tE,tax=net>0?net*0.2:0;
   const tInv=investments.reduce((s,e)=>s+e.amount,0);
+  const tInvCur=investments.reduce((s,e)=>s+(e.currentValue??e.amount),0);
+  const tUnrealised=tInvCur-tInv;
   const tInvProfit=maturities.reduce((s,e)=>s+(e.profit||0),0);
   document.getElementById("pnl-income").textContent=fmt(tI);
   document.getElementById("pnl-expenses").textContent=fmt(tE);
@@ -1384,8 +1618,11 @@ function renderPnL(){
   document.getElementById("nw-dr").textContent=fmt(tDr);
   document.getElementById("nw-cr").textContent=fmt(tCr);
   document.getElementById("nw-inv").textContent=fmt(tInv);
+  const unrealEl=document.getElementById("nw-inv-unreal");
+  unrealEl.textContent=fmtS(tUnrealised);
+  unrealEl.className="mono "+(tUnrealised>=0?"green":"red");
   document.getElementById("nw-inv-profit").textContent=fmt(tInvProfit);
-  document.getElementById("nw-total").textContent=fmtS(tS+tDr-tCr+tInv+tInvProfit);
+  document.getElementById("nw-total").textContent=fmtS(tS+tDr-tCr+tInvCur+tInvProfit);
 }
 
 function getPeriodRange(){
@@ -1483,14 +1720,23 @@ function renderReport(){
   const tInvCost=invSlice.reduce((s,e)=>s+e.amount,0);
   const tMatProceeds=matSlice.reduce((s,e)=>s+(e.proceeds||0),0);
   const tMatProfit=matSlice.reduce((s,e)=>s+(e.profit||0),0);
-  // All holdings snapshot (not period-filtered — full picture)
+  // All holdings snapshot
   const tAllHoldings=investments.reduce((s,e)=>s+e.amount,0);
+  const tAllCurrent=investments.reduce((s,e)=>s+(e.currentValue??e.amount),0);
+  const tAllUnrealised=tAllCurrent-tAllHoldings;
   const tAllProfit=maturities.reduce((s,e)=>s+(e.profit||0),0);
   const overallROI=tAllHoldings>0?((tAllProfit/tAllHoldings)*100).toFixed(1):"0.0";
+  const unrealisedROI=tAllHoldings>0?((tAllUnrealised/tAllHoldings)*100).toFixed(1):"0.0";
 
+  const TYPE_LABEL={Stock:"Stock",Crypto:"Crypto",Gold:"Gold",TBill:"T-Bill",FD:"Fixed Dep.",Other:"Manual"};
   const invRows=invSlice.length
-    ? [...invSlice].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<tr><td class="td-mono">${e.date}</td><td>${e.name}</td><td class="td-mono">${e.qty??"\u2014"}</td><td class="td-mono">${e.rate??0}%</td><td class="td-green">${fmt(e.amount)}</td></tr>`).join("")
-    : `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem 0;">No investments recorded this period</td></tr>`;
+    ? [...invSlice].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
+        const curVal=e.currentValue??e.amount;
+        const gain=curVal-e.amount;
+        const gainPct=e.amount>0?((gain/e.amount)*100).toFixed(1):0;
+        return `<tr><td class="td-mono">${e.date}</td><td>${e.name}${e.ticker?` <span style="font-size:10px;color:var(--text3)">(${e.ticker})</span>`:""}</td><td>${TYPE_LABEL[e.type||"Other"]||e.type}</td><td class="td-mono">${e.qty??"\u2014"}</td><td class="td-green">${fmt(e.amount)}</td><td style="font-family:'JetBrains Mono',monospace">${fmt(curVal)}</td><td class="${gain>=0?"td-green":"td-red"}">${fmtS(gain)} (${gainPct}%)</td></tr>`;
+      }).join("")
+    : `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem 0;">No investments recorded this period</td></tr>`;
 
   const matRows=matSlice.length
     ? [...matSlice].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
@@ -1504,16 +1750,16 @@ function renderReport(){
       <div class="card-title">Investments</div>
       <div class="rep-dc-grid">
         <div class="rep-dc-metric"><div class="m-label">Invested this period</div><div class="m-value blue">${fmt(tInvCost)}</div></div>
-        <div class="rep-dc-metric"><div class="m-label">Proceeds this period</div><div class="m-value green">${fmt(tMatProceeds)}</div></div>
-        <div class="rep-dc-metric"><div class="m-label">Profit this period</div><div class="m-value ${tMatProfit>=0?"green":"red"}">${fmtS(tMatProfit)}</div></div>
-        <div class="rep-dc-metric"><div class="m-label">Overall ROI</div><div class="m-value ${tAllProfit>=0?"green":"red"}">${overallROI}%</div></div>
+        <div class="rep-dc-metric"><div class="m-label">Total portfolio value</div><div class="m-value ${tAllCurrent>=tAllHoldings?"green":"red"}">${fmt(tAllCurrent)}</div></div>
+        <div class="rep-dc-metric"><div class="m-label">Unrealised G/L</div><div class="m-value ${tAllUnrealised>=0?"green":"red"}">${fmtS(tAllUnrealised)} (${unrealisedROI}%)</div></div>
+        <div class="rep-dc-metric"><div class="m-label">Realised profit</div><div class="m-value ${tMatProfit>=0?"green":"red"}">${fmtS(tMatProfit)}</div></div>
       </div>
 
       <div class="rep-dc-sub">Holdings acquired this period</div>
       <div style="overflow-x:auto"><table class="rep-table">
-        <thead><tr><th>Date</th><th>Asset</th><th>Quantity</th><th>Rate</th><th>Amount Paid</th></tr></thead>
+        <thead><tr><th>Date</th><th>Asset</th><th>Type</th><th>Quantity</th><th>Cost</th><th>Current Value</th><th>Gain / Loss</th></tr></thead>
         <tbody>${invRows}</tbody>
-        ${invSlice.length?`<tfoot><tr><td colspan="4">Total invested</td><td class="td-green">${fmt(tInvCost)}</td></tr></tfoot>`:""}
+        ${invSlice.length?`<tfoot><tr><td colspan="4">Total invested</td><td class="td-green">${fmt(tInvCost)}</td><td></td><td></td></tr></tfoot>`:""}
       </table></div>
 
       <div class="rep-dc-sub" style="margin-top:1.25rem">Maturities &amp; sales this period</div>
@@ -1740,31 +1986,57 @@ window.submitPartPay=async function(){
 
 function renderInvestments(){
   const tCost=investments.reduce((s,e)=>s+e.amount,0);
+  const tCurrentVal=investments.reduce((s,e)=>s+(e.currentValue??e.amount),0);
+  const tUnrealised=tCurrentVal-tCost;
   const tProfit=maturities.reduce((s,e)=>s+(e.profit||0),0);
   const tProceeds=maturities.reduce((s,e)=>s+(e.proceeds||0),0);
   const netROI=tCost>0?((tProfit/tCost)*100).toFixed(1):0;
+  const unrealisedROI=tCost>0?((tUnrealised/tCost)*100).toFixed(1):0;
+
   document.getElementById("inv-metrics").innerHTML=`
     <div class="metric"><div class="m-label">Holdings (cost)</div><div class="m-value blue">${fmt(tCost)}</div></div>
-    <div class="metric"><div class="m-label">Total realised</div><div class="m-value green">${fmt(tProceeds)}</div></div>
-    <div class="metric"><div class="m-label">Total profit</div><div class="m-value ${tProfit>=0?"green":"red"}">${fmtS(tProfit)}</div></div>
-    <div class="metric"><div class="m-label">ROI</div><div class="m-value ${tProfit>=0?"green":"red"}">${netROI}%</div></div>`;
+    <div class="metric"><div class="m-label">Current value</div><div class="m-value ${tCurrentVal>=tCost?"green":"red"}">${fmt(tCurrentVal)}</div></div>
+    <div class="metric"><div class="m-label">Unrealised G/L</div><div class="m-value ${tUnrealised>=0?"green":"red"}">${fmtS(tUnrealised)} <span style="font-size:11px">(${unrealisedROI}%)</span></div></div>
+    <div class="metric"><div class="m-label">Realised profit</div><div class="m-value ${tProfit>=0?"green":"red"}">${fmtS(tProfit)}</div></div>`;
+
+  const TYPE_TAG={Stock:"tag-stock",Crypto:"tag-crypto",Gold:"tag-gold",TBill:"tag-tbill",FD:"tag-fd",Other:"tag-other"};
+  const TYPE_LABEL={Stock:"Stock",Crypto:"Crypto",Gold:"Gold",TBill:"T-Bill",FD:"Fixed Dep.",Other:"Manual"};
 
   // Holdings list
   const invEl=document.getElementById("inv-list");
   const sortedInv=[...investments].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   if(!sortedInv.length){invEl.innerHTML='<div class="empty">No investments recorded yet</div>';}
-  else invEl.innerHTML=sortedInv.map(e=>`
-    <div class="row-item inv-row">
+  else invEl.innerHTML=sortedInv.map(e=>{
+    const curVal=e.currentValue??e.amount;
+    const gain=curVal-e.amount;
+    const gainPct=e.amount>0?((gain/e.amount)*100).toFixed(1):0;
+    const barPct=e.amount>0?Math.min(200,Math.max(0,(curVal/e.amount)*100)):0;
+    const barColor=gain>=0?"var(--accent)":"var(--danger)";
+    const type=e.type||"Other";
+    const live=isLiveType(type);
+    const lastUpd=e.lastUpdated?`Updated ${e.lastUpdated}`:"Not yet fetched";
+    const actionBtn=live
+      ?`<button class="btn-refresh" onclick="refreshOnePrice('${e.id}')">⟳</button>`
+      :`<button class="btn-upd-val" onclick="openUpdVal('${e.id}')">✎ Update</button>`;
+    return `
+    <div class="row-item inv-row-ext">
       <div>
-        <div class="ri-name">📈 ${e.name}</div>
-        <div class="ri-sub">${e.date} &middot; Qty: ${e.qty??"\u2014"} &middot; Rate: ${e.rate??0}%</div>
+        <div class="ri-name">
+          ${e.name}
+          <span class="inv-type-tag ${TYPE_TAG[type]||"tag-other"}">${TYPE_LABEL[type]||type}</span>
+          ${e.ticker?`<span class="inv-type-tag tag-stock" style="font-size:9px">${e.ticker}</span>`:""}
+        </div>
+        <div class="ri-sub">${e.date} &middot; Qty: ${e.qty??"\u2014"} &middot; Rate: ${e.rate??0}% &middot; ${lastUpd}</div>
+        <div class="inv-growth-bar-wrap"><div class="inv-growth-bar" style="width:${Math.min(100,barPct)}%;background:${barColor}"></div></div>
       </div>
-      <span class="badge badge-inv">HOLDING</span>
-      <div class="ri-amt" style="color:var(--text2);font-size:11px">Qty<br><strong style="font-size:13px;color:var(--text)">${e.qty??"\u2014"}</strong></div>
-      <div class="ri-amt" style="color:var(--text2);font-size:11px">Rate<br><strong style="font-size:13px;color:var(--blue)">${e.rate??0}%</strong></div>
-      <div class="ri-amt blue">${fmt(e.amount)}</div>
+      <span class="inv-gain ${gain>0?"pos":gain<0?"neg":"neu"}">${gain>=0?"+":""}${gainPct}%</span>
+      <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Cost<br><strong style="font-size:12px;color:var(--text)">${fmt(e.amount)}</strong></div>
+      <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Current<br><strong class="inv-cur-val" style="color:${gain>=0?"var(--accent)":"var(--danger)"}">${fmt(curVal)}</strong></div>
+      <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">G/L<br><strong style="font-size:12px;color:${gain>=0?"var(--accent)":"var(--danger)"}">${fmtS(gain)}</strong></div>
+      ${actionBtn}
       <button class="del-btn" onclick="delDoc('investments','${e.id}')">&#215;</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 
   // Maturities list
   const matEl=document.getElementById("mat-list");
