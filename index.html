@@ -614,6 +614,32 @@ button.btn-sm[onclick="doSignOut()"]{
   #tab-reports{display:block!important;}
   .card{border:1px solid #ccc!important;break-inside:avoid;box-shadow:none!important;}
 }
+
+/* ── INVESTMENTS ── */
+.inv-tabs{display:flex;gap:3px;margin-bottom:1.25rem;background:var(--surface2);padding:4px;border-radius:var(--radius-xl);width:fit-content;}
+.inv-tab{font-size:12px;padding:6px 16px;border-radius:100px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-family:"JetBrains Mono",monospace;transition:all .15s;font-weight:500;}
+.inv-tab:hover{color:var(--text);}
+.inv-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.1),0 0 0 1px var(--border);}
+.inv-section{display:none;}.inv-section.active{display:block;}
+.inv-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.5rem;}
+@media(max-width:600px){.inv-metrics{grid-template-columns:repeat(2,1fr);}}
+.form-grid-inv{display:grid;grid-template-columns:1fr 110px 90px 120px auto;gap:8px;align-items:center;}
+.form-grid-inv input,.form-grid-inv select{height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:"Instrument Sans",sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
+.form-grid-inv input:focus,.form-grid-inv select:focus{border-color:var(--border3);box-shadow:0 0 0 3px rgba(26,107,60,0.08);}
+.form-grid-mat{display:grid;grid-template-columns:1fr 90px 90px 120px 120px auto;gap:8px;align-items:center;}
+.form-grid-mat input,.form-grid-mat select{height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:"Instrument Sans",sans-serif;font-size:13px;padding:0 12px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
+.form-grid-mat input:focus{border-color:var(--border3);box-shadow:0 0 0 3px rgba(26,107,60,0.08);}
+.inv-row{grid-template-columns:1fr 80px 80px 110px 110px auto;}
+.mat-row{grid-template-columns:1fr 80px 80px 110px 110px 110px auto;}
+.badge-inv{background:var(--blue-light);color:var(--blue);}
+.badge-mat{background:var(--accent-light);color:var(--accent);}
+.badge-loss{background:var(--danger-light);color:var(--danger);}
+@media(max-width:600px){
+  .form-grid-inv,.form-grid-mat{grid-template-columns:1fr 1fr;}
+  .form-grid-inv input:first-child,.form-grid-mat input:first-child{grid-column:1/-1;}
+  .form-grid-inv .btn,.form-grid-mat .btn{grid-column:1/-1;}
+  .inv-row,.mat-row{grid-template-columns:1fr auto auto;}
+}
 </style>
 </head>
 <body>
@@ -676,6 +702,7 @@ button.btn-sm[onclick="doSignOut()"]{
     <button class="mob-tab" onclick="showTab('income',this,true)">Income</button>
     <button class="mob-tab" onclick="showTab('savings',this,true)">Savings</button>
     <button class="mob-tab" onclick="showTab('dc',this,true)">Debtors &amp; Creditors</button>
+    <button class="mob-tab" onclick="showTab('investments',this,true)">Investments</button>
     <button class="mob-tab" onclick="showTab('pnl',this,true)">P&amp;L</button>
     <button class="mob-tab" onclick="showTab('reports',this,true)">Reports</button>
   </div>
@@ -687,6 +714,7 @@ button.btn-sm[onclick="doSignOut()"]{
     <button class="tab" onclick="showTab('income',this)">Income</button>
     <button class="tab" onclick="showTab('savings',this)">Savings</button>
     <button class="tab" onclick="showTab('dc',this)">Debtors &amp; Creditors</button>
+    <button class="tab" onclick="showTab('investments',this)">Investments</button>
     <button class="tab" onclick="showTab('pnl',this)">P&amp;L</button>
     <button class="tab" onclick="showTab('reports',this)">Reports</button>
   </div>
@@ -863,6 +891,51 @@ button.btn-sm[onclick="doSignOut()"]{
     </div>
   </div>
 
+  <!-- INVESTMENTS -->
+  <div class="section" id="tab-investments">
+    <!-- Summary metrics -->
+    <div class="inv-metrics" id="inv-metrics"></div>
+
+    <!-- Sub-tabs -->
+    <div class="inv-tabs">
+      <button class="inv-tab active" onclick="showInvTab('holdings',this)">📈 Holdings</button>
+      <button class="inv-tab" onclick="showInvTab('maturities',this)">💰 Maturities / Sales</button>
+    </div>
+
+    <!-- HOLDINGS -->
+    <div class="inv-section active" id="invtab-holdings">
+      <div class="card">
+        <div class="card-title">Add investment</div>
+        <div class="form-grid-inv">
+          <input type="text" id="inv-name" placeholder="Asset name (e.g. Gold, T-Bill, Stocks)"/>
+          <input type="number" id="inv-rate" placeholder="Rate (%)" min="0" step="0.01"/>
+          <input type="number" id="inv-qty" placeholder="Quantity" min="0" step="0.0001"/>
+          <input type="number" id="inv-amt" placeholder="Initial amount" min="0" step="0.01"/>
+          <button class="btn" onclick="addInvestment()">+ Add</button>
+        </div>
+      </div>
+      <div class="section-label">Active holdings</div>
+      <div class="list" id="inv-list"></div>
+    </div>
+
+    <!-- MATURITIES / SALES -->
+    <div class="inv-section" id="invtab-maturities">
+      <div class="card">
+        <div class="card-title">Record maturity / sale</div>
+        <div class="form-grid-mat">
+          <input type="text" id="mat-name" placeholder="Asset name"/>
+          <input type="number" id="mat-rate" placeholder="Exit rate (%)" min="0" step="0.01"/>
+          <input type="number" id="mat-qty" placeholder="Qty sold" min="0" step="0.0001"/>
+          <input type="number" id="mat-proceeds" placeholder="Proceeds received" min="0" step="0.01"/>
+          <input type="number" id="mat-profit" placeholder="Profit made" step="0.01"/>
+          <button class="btn" onclick="addMaturity()">+ Record</button>
+        </div>
+      </div>
+      <div class="section-label">Maturities &amp; sales</div>
+      <div class="list" id="mat-list"></div>
+    </div>
+  </div>
+
   <!-- P&L -->
   <div class="section" id="tab-pnl">
     <div class="card">
@@ -882,7 +955,8 @@ button.btn-sm[onclick="doSignOut()"]{
       <div class="pnl-row"><span>Total Savings</span><span class="mono" id="nw-sav">GH&#8373; 0</span></div>
       <div class="pnl-row"><span>Outstanding (owed to you)</span><span class="mono" id="nw-dr">GH&#8373; 0</span></div>
       <div class="pnl-row"><span>Outstanding (you owe)</span><span class="mono" id="nw-cr">GH&#8373; 0</span></div>
-      <div class="pnl-row"><span>Investments</span><span class="mono">GH&#8373; 0.00</span></div>
+      <div class="pnl-row"><span>Investments (cost basis)</span><span class="mono" id="nw-inv">GH&#8373; 0.00</span></div>
+      <div class="pnl-row"><span>Investment profit realised</span><span class="mono green" id="nw-inv-profit">GH&#8373; 0.00</span></div>
       <div class="pnl-row"><span>Net Worth</span><span class="mono" id="nw-total">GH&#8373; 0</span></div>
     </div>
   </div>
@@ -1053,7 +1127,7 @@ const uid  = () => Date.now().toString(36) + Math.random().toString(36).slice(2,
 const CAT_ICONS  = {Food:"\u{1F354}",Data:"\u{1F4F6}",Transport:"\u{1F68C}",Shopping:"\u{1F6CD}",Health:"\u{1F48A}",Bills:"\u{1F4A1}",Gift:"\u{1F381}",Business:"\u{1F4BC}",Entertainment:"\u{1F3AC}",Education:"\u{1F4DA}",Other:"\u{1F4E6}",Pepsodent:"\u{1FAB7}","forex acc":"\u{1F4B2}"};
 const CAT_COLORS = {Food:"#E24B4A",Data:"#378ADD",Transport:"#7F77DD",Shopping:"#D4537E",Health:"#1D9E75",Bills:"#EF9F27",Gift:"#D85A30",Business:"#3B6D11",Entertainment:"#884FB5",Education:"#185FA5",Other:"#888780",Pepsodent:"#1D9E75","forex acc":"#BA7517"};
 
-let expenses=[],income=[],savings=[],debtors=[],creditors=[],savingsGoals=[],charts={},repPeriod="daily",repOff=0;
+let expenses=[],income=[],savings=[],debtors=[],creditors=[],savingsGoals=[],investments=[],maturities=[],charts={},repPeriod="daily",repOff=0;
 let savGoal = parseInt(localStorage.getItem("fh_savgoal")||"1000");
 
 function setSyncStatus(s,m){
@@ -1062,7 +1136,7 @@ function setSyncStatus(s,m){
 }
 
 let ready=0;
-function onReady(){ready++;if(ready>=6)setSyncStatus("synced","Synced \u2022 all devices");}
+function onReady(){ready++;if(ready>=8)setSyncStatus("synced","Synced \u2022 all devices");}
 
 onSnapshot(collection(db,"users",currentUser.uid,"expenses"),s=>{expenses=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();onReady();},e=>{console.error("expenses",e);setSyncStatus("error","Sync error");});
 onSnapshot(collection(db,"users",currentUser.uid,"income"),s=>{income=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();onReady();},e=>{console.error("income",e);setSyncStatus("error","Sync error");});
@@ -1070,6 +1144,8 @@ onSnapshot(collection(db,"users",currentUser.uid,"income"),s=>{income=s.docs.map
   onSnapshot(collection(db,"users",currentUser.uid,"debtors"),s=>{debtors=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();onReady();},e=>{console.error("debtors",e);setSyncStatus("error","Sync error");});
   onSnapshot(collection(db,"users",currentUser.uid,"creditors"),s=>{creditors=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();onReady();},e=>{console.error("creditors",e);setSyncStatus("error","Sync error");});
   onSnapshot(collection(db,"users",currentUser.uid,"savingsGoals"),s=>{savingsGoals=s.docs.map(d=>({id:d.id,...d.data()}));renderSavList();onReady();},e=>{console.error("savingsGoals",e);setSyncStatus("error","Sync error");});
+  onSnapshot(collection(db,"users",currentUser.uid,"investments"),s=>{investments=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();onReady();},e=>{console.error("investments",e);setSyncStatus("error","Sync error");});
+  onSnapshot(collection(db,"users",currentUser.uid,"maturities"),s=>{maturities=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();onReady();},e=>{console.error("maturities",e);setSyncStatus("error","Sync error");});
 async function addToDb(col,data){
   setSyncStatus("syncing","Saving...");
   try{const id=uid();await setDoc(doc(db,"users",currentUser.uid,col,id),{...data,id});setSyncStatus("synced","Synced \u2022 all devices");}
@@ -1096,6 +1172,36 @@ document.getElementById("e-desc").addEventListener("keydown",e=>{if(e.key==="Ent
 document.getElementById("i-source").addEventListener("keydown",e=>{if(e.key==="Enter")window.addIncome();});
 document.getElementById("dr-name").addEventListener("keydown",e=>{if(e.key==="Enter")window.addDebtor();});
 document.getElementById("cr-name").addEventListener("keydown",e=>{if(e.key==="Enter")window.addCreditor();});
+document.getElementById("inv-name").addEventListener("keydown",e=>{if(e.key==="Enter")window.addInvestment();});
+document.getElementById("mat-name").addEventListener("keydown",e=>{if(e.key==="Enter")window.addMaturity();});
+
+window.addInvestment=function(){
+  const name=document.getElementById("inv-name").value.trim();
+  const rate=parseFloat(document.getElementById("inv-rate").value)||0;
+  const qty=parseFloat(document.getElementById("inv-qty").value)||0;
+  const amt=parseFloat(document.getElementById("inv-amt").value);
+  if(!name||isNaN(amt)||amt<=0)return;
+  addToDb("investments",{date:todayStr(),name,rate,qty,amount:amt});
+  document.getElementById("inv-name").value="";
+  document.getElementById("inv-rate").value="";
+  document.getElementById("inv-qty").value="";
+  document.getElementById("inv-amt").value="";
+};
+
+window.addMaturity=function(){
+  const name=document.getElementById("mat-name").value.trim();
+  const rate=parseFloat(document.getElementById("mat-rate").value)||0;
+  const qty=parseFloat(document.getElementById("mat-qty").value)||0;
+  const proceeds=parseFloat(document.getElementById("mat-proceeds").value)||0;
+  const profit=parseFloat(document.getElementById("mat-profit").value)||0;
+  if(!name||proceeds<=0)return;
+  addToDb("maturities",{date:todayStr(),name,rate,qty,proceeds,profit});
+  document.getElementById("mat-name").value="";
+  document.getElementById("mat-rate").value="";
+  document.getElementById("mat-qty").value="";
+  document.getElementById("mat-proceeds").value="";
+  document.getElementById("mat-profit").value="";
+};
 
 // ── all render/logic functions inside startListeners so they share scope ──
 
@@ -1105,7 +1211,7 @@ const totalSav=()=>savings.reduce((s,e)=>s+e.amount,0);
 const totalDr=()=>debtors.filter(d=>!d.paid).reduce((s,d)=>s+d.amount,0);
 const totalCr=()=>creditors.filter(c=>!c.paid).reduce((s,c)=>s+c.amount,0);
 
-function renderAll(){renderDashboard();renderExpList();renderIncList();renderSavList();renderDcLists();renderPnL();}
+function renderAll(){renderDashboard();renderExpList();renderIncList();renderSavList();renderDcLists();renderPnL();renderInvestments();}
 
 function renderDashboard(){
   const tI=totalInc(),tE=totalExp(),tDr=totalDr(),net=tI-tE;
@@ -1267,6 +1373,8 @@ function renderDcLists(){
 
 function renderPnL(){
   const tI=totalInc(),tE=totalExp(),tS=totalSav(),tDr=totalDr(),tCr=totalCr(),net=tI-tE,tax=net>0?net*0.2:0;
+  const tInv=investments.reduce((s,e)=>s+e.amount,0);
+  const tInvProfit=maturities.reduce((s,e)=>s+(e.profit||0),0);
   document.getElementById("pnl-income").textContent=fmt(tI);
   document.getElementById("pnl-expenses").textContent=fmt(tE);
   const el=document.getElementById("pnl-net");el.textContent=fmtS(net);el.className="ri-amt "+(net>=0?"green":"red");
@@ -1275,7 +1383,9 @@ function renderPnL(){
   document.getElementById("nw-sav").textContent=fmt(tS);
   document.getElementById("nw-dr").textContent=fmt(tDr);
   document.getElementById("nw-cr").textContent=fmt(tCr);
-  document.getElementById("nw-total").textContent=fmtS(tS+tDr-tCr);
+  document.getElementById("nw-inv").textContent=fmt(tInv);
+  document.getElementById("nw-inv-profit").textContent=fmt(tInvProfit);
+  document.getElementById("nw-total").textContent=fmtS(tS+tDr-tCr+tInv+tInvProfit);
 }
 
 function getPeriodRange(){
@@ -1576,6 +1686,63 @@ window.submitPartPay=async function(){
     setSyncStatus("synced","Synced \u2022 all devices");
     closePartPay();
   }catch(e){setSyncStatus("error","Save failed");console.error(e);}
+};
+
+function renderInvestments(){
+  const tCost=investments.reduce((s,e)=>s+e.amount,0);
+  const tProfit=maturities.reduce((s,e)=>s+(e.profit||0),0);
+  const tProceeds=maturities.reduce((s,e)=>s+(e.proceeds||0),0);
+  const netROI=tCost>0?((tProfit/tCost)*100).toFixed(1):0;
+  document.getElementById("inv-metrics").innerHTML=`
+    <div class="metric"><div class="m-label">Holdings (cost)</div><div class="m-value blue">${fmt(tCost)}</div></div>
+    <div class="metric"><div class="m-label">Total realised</div><div class="m-value green">${fmt(tProceeds)}</div></div>
+    <div class="metric"><div class="m-label">Total profit</div><div class="m-value ${tProfit>=0?"green":"red"}">${fmtS(tProfit)}</div></div>
+    <div class="metric"><div class="m-label">ROI</div><div class="m-value ${tProfit>=0?"green":"red"}">${netROI}%</div></div>`;
+
+  // Holdings list
+  const invEl=document.getElementById("inv-list");
+  const sortedInv=[...investments].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  if(!sortedInv.length){invEl.innerHTML='<div class="empty">No investments recorded yet</div>';}
+  else invEl.innerHTML=sortedInv.map(e=>`
+    <div class="row-item inv-row">
+      <div>
+        <div class="ri-name">📈 ${e.name}</div>
+        <div class="ri-sub">${e.date} &middot; Qty: ${e.qty??"\u2014"} &middot; Rate: ${e.rate??0}%</div>
+      </div>
+      <span class="badge badge-inv">HOLDING</span>
+      <div class="ri-amt" style="color:var(--text2);font-size:11px">Qty<br><strong style="font-size:13px;color:var(--text)">${e.qty??"\u2014"}</strong></div>
+      <div class="ri-amt" style="color:var(--text2);font-size:11px">Rate<br><strong style="font-size:13px;color:var(--blue)">${e.rate??0}%</strong></div>
+      <div class="ri-amt blue">${fmt(e.amount)}</div>
+      <button class="del-btn" onclick="delDoc('investments','${e.id}')">&#215;</button>
+    </div>`).join("");
+
+  // Maturities list
+  const matEl=document.getElementById("mat-list");
+  const sortedMat=[...maturities].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  if(!sortedMat.length){matEl.innerHTML='<div class="empty">No maturities or sales recorded yet</div>';}
+  else matEl.innerHTML=sortedMat.map(e=>{
+    const profit=e.profit||0;
+    return `
+    <div class="row-item mat-row">
+      <div>
+        <div class="ri-name">💰 ${e.name}</div>
+        <div class="ri-sub">${e.date} &middot; Qty sold: ${e.qty??"\u2014"} &middot; Exit rate: ${e.rate??0}%</div>
+      </div>
+      <span class="badge ${profit>=0?"badge-mat":"badge-loss"}">${profit>=0?"PROFIT":"LOSS"}</span>
+      <div class="ri-amt" style="color:var(--text2);font-size:11px">Qty<br><strong style="font-size:13px;color:var(--text)">${e.qty??"\u2014"}</strong></div>
+      <div class="ri-amt" style="color:var(--text2);font-size:11px">Exit %<br><strong style="font-size:13px;color:var(--blue)">${e.rate??0}%</strong></div>
+      <div class="ri-amt green">${fmt(e.proceeds)}</div>
+      <div class="ri-amt ${profit>=0?"green":"red"}">${fmtS(profit)}</div>
+      <button class="del-btn" onclick="delDoc('maturities','${e.id}')">&#215;</button>
+    </div>`;
+  }).join("");
+}
+
+window.showInvTab=function(id,btn){
+  document.querySelectorAll(".inv-section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".inv-tab").forEach(b=>b.classList.remove("active"));
+  document.getElementById("invtab-"+id).classList.add("active");
+  btn.classList.add("active");
 };
 
 } // end startListeners
