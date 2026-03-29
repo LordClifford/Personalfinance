@@ -1477,6 +1477,53 @@ function renderReport(){
       }).join("")
     : `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem 0;">No outstanding creditors</td></tr>`;
 
+  // ── Investments within period ──
+  const invSlice=investments.filter(e=>e.date>=start&&e.date<=end);
+  const matSlice=maturities.filter(e=>e.date>=start&&e.date<=end);
+  const tInvCost=invSlice.reduce((s,e)=>s+e.amount,0);
+  const tMatProceeds=matSlice.reduce((s,e)=>s+(e.proceeds||0),0);
+  const tMatProfit=matSlice.reduce((s,e)=>s+(e.profit||0),0);
+  // All holdings snapshot (not period-filtered — full picture)
+  const tAllHoldings=investments.reduce((s,e)=>s+e.amount,0);
+  const tAllProfit=maturities.reduce((s,e)=>s+(e.profit||0),0);
+  const overallROI=tAllHoldings>0?((tAllProfit/tAllHoldings)*100).toFixed(1):"0.0";
+
+  const invRows=invSlice.length
+    ? [...invSlice].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<tr><td class="td-mono">${e.date}</td><td>${e.name}</td><td class="td-mono">${e.qty??"\u2014"}</td><td class="td-mono">${e.rate??0}%</td><td class="td-green">${fmt(e.amount)}</td></tr>`).join("")
+    : `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem 0;">No investments recorded this period</td></tr>`;
+
+  const matRows=matSlice.length
+    ? [...matSlice].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
+        const profit=e.profit||0;
+        return `<tr><td class="td-mono">${e.date}</td><td>${e.name}</td><td class="td-mono">${e.qty??"\u2014"}</td><td class="td-mono">${e.rate??0}%</td><td class="td-green">${fmt(e.proceeds)}</td><td class="${profit>=0?"td-green":"td-red"}">${fmtS(profit)}</td></tr>`;
+      }).join("")
+    : `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem 0;">No maturities or sales this period</td></tr>`;
+
+  const invCard=`
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-title">Investments</div>
+      <div class="rep-dc-grid">
+        <div class="rep-dc-metric"><div class="m-label">Invested this period</div><div class="m-value blue">${fmt(tInvCost)}</div></div>
+        <div class="rep-dc-metric"><div class="m-label">Proceeds this period</div><div class="m-value green">${fmt(tMatProceeds)}</div></div>
+        <div class="rep-dc-metric"><div class="m-label">Profit this period</div><div class="m-value ${tMatProfit>=0?"green":"red"}">${fmtS(tMatProfit)}</div></div>
+        <div class="rep-dc-metric"><div class="m-label">Overall ROI</div><div class="m-value ${tAllProfit>=0?"green":"red"}">${overallROI}%</div></div>
+      </div>
+
+      <div class="rep-dc-sub">Holdings acquired this period</div>
+      <div style="overflow-x:auto"><table class="rep-table">
+        <thead><tr><th>Date</th><th>Asset</th><th>Quantity</th><th>Rate</th><th>Amount Paid</th></tr></thead>
+        <tbody>${invRows}</tbody>
+        ${invSlice.length?`<tfoot><tr><td colspan="4">Total invested</td><td class="td-green">${fmt(tInvCost)}</td></tr></tfoot>`:""}
+      </table></div>
+
+      <div class="rep-dc-sub" style="margin-top:1.25rem">Maturities &amp; sales this period</div>
+      <div style="overflow-x:auto"><table class="rep-table">
+        <thead><tr><th>Date</th><th>Asset</th><th>Qty Sold</th><th>Exit Rate</th><th>Proceeds</th><th>Profit / Loss</th></tr></thead>
+        <tbody>${matRows}</tbody>
+        ${matSlice.length?`<tfoot><tr><td colspan="4">Totals</td><td class="td-green">${fmt(tMatProceeds)}</td><td class="${tMatProfit>=0?"td-green":"td-red"}">${fmtS(tMatProfit)}</td></tr></tfoot>`:""}
+      </table></div>
+    </div>`;
+
   // ── D&C section card ──
   const dcCard=`
     <div class="card">
@@ -1555,6 +1602,7 @@ function renderReport(){
       </table></div>
     </div>
     ${savSlice.length?`<div class="card"><div class="card-title">Savings</div><div style="overflow-x:auto"><table class="rep-table"><thead><tr><th>Date</th><th>Source</th><th>Goal</th><th>Amount</th></tr></thead><tbody>${savSlice.map(e=>`<tr><td class="td-mono">${e.date}</td><td>${e.source}</td><td>${e.goal}</td><td class="td-green">${fmt(e.amount)}</td></tr>`).join("")}</tbody><tfoot><tr><td colspan="3">Total saved</td><td class="td-green">${fmt(tS)}</td></tr></tfoot></table></div></div>`:""}
+    ${invCard}
     ${dcCard}
     <div class="card">
       <div class="card-title">Period summary</div>
@@ -1562,6 +1610,8 @@ function renderReport(){
       <div class="pnl-row"><span>Total Expenses</span><span class="ri-amt red">${fmt(tE)}</span></div>
       <div class="pnl-row"><span>Total Savings</span><span class="ri-amt amber">${fmt(tS)}</span></div>
       <div class="pnl-row"><span>Net (Income \u2212 Expenses)</span><span class="ri-amt ${net>=0?"green":"red"}">${fmtS(net)}</span></div>
+      <div class="pnl-row"><span>Invested this period</span><span class="ri-amt blue">${fmt(tInvCost)}</span></div>
+      <div class="pnl-row"><span>Investment profit this period</span><span class="ri-amt ${tMatProfit>=0?"green":"red"}">${fmtS(tMatProfit)}</span></div>
       <div class="pnl-row"><span>Outstanding receivable</span><span class="ri-amt green">${fmt(tDrOut)}</span></div>
       <div class="pnl-row"><span>Outstanding payable</span><span class="ri-amt red">${fmt(tCrOut)}</span></div>
       <div class="pnl-row"><span>Net D&amp;C position</span><span class="ri-amt ${tDrOut>=tCrOut?"green":"red"}">${fmtS(tDrOut-tCrOut)}</span></div>
