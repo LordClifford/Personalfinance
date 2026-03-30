@@ -1389,16 +1389,62 @@ async function fetchStockPrice(ticker){
 
 async function fetchCryptoPrice(symbol){
   if(!symbol)return null;
-  // map common symbols to coingecko ids
-  const idMap={BTC:"bitcoin",ETH:"ethereum",BNB:"binancecoin",SOL:"solana",XRP:"ripple",ADA:"cardano",DOGE:"dogecoin",DOT:"polkadot",MATIC:"matic-network",AVAX:"avalanche-2",LINK:"chainlink",LTC:"litecoin",UNI:"uniswap",ATOM:"cosmos",XLM:"stellar",ALGO:"algorand",NEAR:"near",FTM:"fantom",SAND:"the-sandbox",MANA:"decentraland",SHIB:"shiba-inu",TRX:"tron",USDT:"tether",USDC:"usd-coin"};
-  const id=idMap[symbol.toUpperCase()]||symbol.toLowerCase();
+  // Comprehensive symbol → CoinGecko ID map
+  // IMPORTANT: many symbols have duplicate names on CoinGecko — always use the exact canonical ID
+  const idMap={
+    // Major coins
+    BTC:"bitcoin",ETH:"ethereum",BNB:"binancecoin",SOL:"solana",XRP:"ripple",
+    ADA:"cardano",DOGE:"dogecoin",DOT:"polkadot",AVAX:"avalanche-2",LINK:"chainlink",
+    LTC:"litecoin",UNI:"uniswap",ATOM:"cosmos",XLM:"stellar",ALGO:"algorand",
+    NEAR:"near",TRX:"tron",USDT:"tether",USDC:"usd-coin",BUSD:"binance-usd",
+    MATIC:"matic-network",POL:"matic-network",  // POL is the rebranded MATIC
+    FTM:"fantom",SAND:"the-sandbox",MANA:"decentraland",SHIB:"shiba-inu",
+    // Your holdings
+    CORE:"coredaoorg",   // Core DAO — NOT "core" which is a different token
+    PI:"pi-network",     // Pi Network
+    MAJOR:"major",       // MAJOR token
+    // Other common tokens
+    ARB:"arbitrum",OP:"optimism",APT:"aptos",SUI:"sui",INJ:"injective-protocol",
+    WLD:"worldcoin-wld",TON:"the-open-network",PEPE:"pepe",FLOKI:"floki",
+    WIF:"dogwifcoin",BONK:"bonk",JUP:"jupiter-exchange-solana",
+    SEI:"sei-network",TIA:"celestia",PYTH:"pyth-network",
+    RUNE:"thorchain",AAVE:"aave",COMP:"compound-governance-token",
+    MKR:"maker",SNX:"havven",CRV:"curve-dao-token",BAL:"balancer",
+    LDO:"lido-dao",RPL:"rocket-pool",PENDLE:"pendle",
+    IMX:"immutable-x",BLUR:"blur",ENS:"ethereum-name-service",
+    GRT:"the-graph",FIL:"filecoin",ICP:"internet-computer",
+    HBAR:"hedera-hashgraph",VET:"vechain",EOS:"eos",XTZ:"tezos",
+    EGLD:"elrond-erd-2",THETA:"theta-token",CHZ:"chiliz",
+    MSTR:"microstrategy", // note: MSTR is a stock, not crypto — handle via stock route
+  };
+  const id=idMap[symbol.toUpperCase()];
+
+  // If we have a known mapping, use it directly
+  if(id){
+    try{
+      const res=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`,{signal:AbortSignal.timeout(8000)});
+      const data=await res.json();
+      const price=data[id]?.usd;
+      if(price)return{price,currency:"USD"};
+    }catch(e){console.warn("Crypto fetch (mapped) failed",symbol,e);}
+  }
+
+  // Fallback: search CoinGecko by symbol to find the correct ID, then fetch price
+  // This handles unknown tokens gracefully
   try{
-    const res=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`,{signal:AbortSignal.timeout(8000)});
-    const data=await res.json();
-    const price=data[id]?.usd;
+    const searchRes=await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(symbol)}`,{signal:AbortSignal.timeout(8000)});
+    const searchData=await searchRes.json();
+    // Find the coin whose symbol matches exactly (case-insensitive), prefer higher market cap rank
+    const coins=searchData?.coins||[];
+    const match=coins.find(c=>c.symbol.toUpperCase()===symbol.toUpperCase()&&c.market_cap_rank);
+    if(!match)return null;
+    const priceRes=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${match.id}&vs_currencies=usd`,{signal:AbortSignal.timeout(8000)});
+    const priceData=await priceRes.json();
+    const price=priceData[match.id]?.usd;
     if(!price)return null;
+    console.info(`Crypto resolved ${symbol} → ${match.id} (rank #${match.market_cap_rank})`);
     return{price,currency:"USD"};
-  }catch(e){console.warn("Crypto fetch failed",symbol,e);return null;}
+  }catch(e){console.warn("Crypto fetch (search fallback) failed",symbol,e);return null;}
 }
 
 async function fetchGoldPrice(){
@@ -1484,7 +1530,7 @@ window.refreshAllPrices=async function(){
 window.refreshOnePrice=async function(id){
   const inv=investments.find(e=>e.id===id);if(!inv)return;
   const status=document.getElementById("inv-price-status");
-  status.textContent=`Fetching price for ${inv.name}…`;
+  status.textContent=`Fetching price for ${inv.name} (${inv.ticker})…`;
   const result=await fetchCurrentPrice(inv);
   if(result!==null){
     try{
@@ -1493,10 +1539,11 @@ window.refreshOnePrice=async function(id){
         currentPricePerUnit:parseFloat(result.pricePerUnit.toFixed(6)),
         lastUpdated:todayStr()
       });
-      status.textContent=`${inv.name} updated to GH₵ ${result.pricePerUnit.toFixed(4)}/unit. As of ${todayStr()}.`;
+      const ghsRate=await getUSDtoGHS();
+      status.textContent=`✓ ${inv.name}: GH₵${result.pricePerUnit.toFixed(4)}/unit · Total value GH₵${result.totalValue.toFixed(2)} · Updated ${todayStr()}`;
     }catch(e){status.textContent="Save failed.";console.error(e);}
   } else {
-    status.textContent=`Could not fetch price for ${inv.name}. Check ticker and quantity.`;
+    status.textContent=`✗ Could not fetch price for ${inv.name} (${inv.ticker}). Check that the ticker symbol is correct.`;
   }
 };
 
