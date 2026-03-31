@@ -1458,17 +1458,58 @@ async function fetchGoldPrice(){
   }catch(e){console.warn("Gold fetch failed",e);return null;}
 }
 
-// Get USD→GHS exchange rate (cached 1h)
+// Get USD→GHS exchange rate — tries 3 sources in sequence, cached 30 min
 let _ghsRate=null,_ghsFetched=0;
 async function getUSDtoGHS(){
-  if(_ghsRate&&Date.now()-_ghsFetched<3600000)return _ghsRate;
+  if(_ghsRate&&Date.now()-_ghsFetched<1800000)return _ghsRate; // 30min cache
+
+  // Source 1: ExchangeRate-API (free, no key, supports GHS)
   try{
-    const res=await fetch("https://api.frankfurter.app/latest?from=USD&to=GHS",{signal:AbortSignal.timeout(8000)});
+    const res=await fetch("https://open.er-api.com/v6/latest/USD",{signal:AbortSignal.timeout(6000)});
     const data=await res.json();
-    _ghsRate=data?.rates?.GHS||15.5; // fallback rate
-    _ghsFetched=Date.now();
-    return _ghsRate;
-  }catch(e){return _ghsRate||15.5;}
+    const rate=data?.rates?.GHS;
+    if(rate&&rate>1){
+      _ghsRate=rate;_ghsFetched=Date.now();
+      console.info(`GHS rate (er-api): 1 USD = GH₵${rate}`);
+      return _ghsRate;
+    }
+  }catch(e){console.warn("er-api GHS failed",e);}
+
+  // Source 2: ExchangeRate.host (free, supports GHS)
+  try{
+    const res=await fetch("https://api.exchangerate.host/latest?base=USD&symbols=GHS",{signal:AbortSignal.timeout(6000)});
+    const data=await res.json();
+    const rate=data?.rates?.GHS;
+    if(rate&&rate>1){
+      _ghsRate=rate;_ghsFetched=Date.now();
+      console.info(`GHS rate (exchangerate.host): 1 USD = GH₵${rate}`);
+      return _ghsRate;
+    }
+  }catch(e){console.warn("exchangerate.host GHS failed",e);}
+
+  // Source 3: Wise public rate endpoint
+  try{
+    const res=await fetch("https://wise.com/rates/live?source=USD&target=GHS",{signal:AbortSignal.timeout(6000)});
+    const data=await res.json();
+    const rate=data?.value;
+    if(rate&&rate>1){
+      _ghsRate=rate;_ghsFetched=Date.now();
+      console.info(`GHS rate (Wise): 1 USD = GH₵${rate}`);
+      return _ghsRate;
+    }
+  }catch(e){console.warn("Wise GHS failed",e);}
+
+  // Use last known rate if we have one, else show a warning fallback
+  if(_ghsRate)return _ghsRate;
+  console.warn("All GHS rate sources failed — using approximate fallback. Prices may be inaccurate.");
+  return 15.8; // last known approximate rate — user should see a warning
+}
+
+// Show GHS rate in status bar so user can verify accuracy
+async function showRateStatus(){
+  const rate=await getUSDtoGHS();
+  const status=document.getElementById("inv-price-status");
+  if(status)status.textContent=`Exchange rate: 1 USD = GH₵${rate.toFixed(2)} · Prices converted at this rate`;
 }
 
 async function fetchCurrentPrice(inv){
@@ -1506,9 +1547,14 @@ window.refreshAllPrices=async function(){
   const btn=document.getElementById("refresh-all-btn");
   const status=document.getElementById("inv-price-status");
   btn.textContent="⟳ Fetching…";btn.disabled=true;
-  status.textContent="Fetching live prices…";
+  status.textContent="Fetching GHS exchange rate…";
+
+  // Get and display the rate first so user can verify
+  const ghsRate=await getUSDtoGHS();
+  status.textContent=`Rate: 1 USD = GH₵${ghsRate.toFixed(2)} · Fetching prices…`;
+
   const liveInvs=investments.filter(e=>isLiveType(e.type||"Other")&&e.ticker&&e.qty>0);
-  if(!liveInvs.length){status.textContent="No live-trackable holdings (need ticker + quantity).";btn.textContent="⟳ Refresh all prices";btn.disabled=false;return;}
+  if(!liveInvs.length){status.textContent=`Rate: 1 USD = GH₵${ghsRate.toFixed(2)} · No live-trackable holdings (need ticker + quantity).`;btn.textContent="⟳ Refresh all prices";btn.disabled=false;return;}
   let updated=0,failed=0;
   for(const inv of liveInvs){
     const result=await fetchCurrentPrice(inv);
@@ -1523,7 +1569,7 @@ window.refreshAllPrices=async function(){
       }catch(e){failed++;console.error(e);}
     } else {failed++;}
   }
-  status.textContent=`Updated ${updated} holding${updated!==1?"s":""}${failed?` · ${failed} failed (check ticker/qty)`:""}. As of ${todayStr()}.`;
+  status.textContent=`Rate: 1 USD = GH₵${ghsRate.toFixed(2)} · Updated ${updated} holding${updated!==1?"s":""}${failed?` · ${failed} failed (check ticker/qty)`:""}. ${todayStr()}.`;
   btn.textContent="⟳ Refresh all prices";btn.disabled=false;
 };
 
@@ -2032,6 +2078,7 @@ window.showTab=function(id,btn,isMobile){
   if(isMobile)document.getElementById("mobileMenu").classList.remove("open");
   if(id==="dashboard")renderCharts();
   if(id==="reports")renderReport();
+  if(id==="investments")showRateStatus();
 };
 window.showDcTab=function(id,btn){
   document.querySelectorAll(".dc-section").forEach(s=>s.classList.remove("active"));
